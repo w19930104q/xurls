@@ -111,6 +111,7 @@ type reporterState struct {
 	exitCode int
 
 	brokenURLs []brokenURL
+	records    []urlRecord
 }
 
 type brokenURL struct {
@@ -138,6 +139,11 @@ func (r *reporter) Write(p []byte) (int, error) {
 func (r *reporter) appendBroken(url, reason string) {
 	state := r.getState()
 	state.brokenURLs = append(state.brokenURLs, brokenURL{url, reason})
+}
+
+func (r *reporter) appendRecord(rec urlRecord) {
+	state := r.getState()
+	state.records = append(state.records, rec)
 }
 
 // Report emits a non-nil error to the reporter's error stream,

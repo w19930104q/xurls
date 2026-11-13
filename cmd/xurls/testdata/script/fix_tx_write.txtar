@@ -1,0 +1,54 @@
+# A write failure while publishing rolls back the whole transaction:
+# no file is modified, and the failure is reported on stderr.
+
+expand one.md
+cp one.md one.orig
+expand two.md
+cp two.md two.orig
+
+mkdir locked
+expand locked/three.md
+cp locked/three.md locked/three.orig
+
+# Make one directory unwritable, so its fixed file cannot be staged.
+# All files pass their url checks, yet none of them may be modified.
+[!windows] exec chmod 555 locked
+[!windows] ! exec xurls -fix one.md locked/three.md two.md
+[!windows] ! stdout .
+[!windows] stderr 'cannot publish fixes'
+[!windows] cmp one.md one.orig
+[!windows] cmp two.md two.orig
+[!windows] cmp locked/three.md locked/three.orig
+[!windows] exec chmod 755 locked
+
+# With the directory writable again, the very same command succeeds,
+# and the fixed files are listed in argument order.
+exec xurls -fix one.md locked/three.md two.md
+stdout '^one.md$'
+stdout '^locked/three.md$'
+stdout '^two.md$'
+! stderr .
+expand one.golden
+cmp one.md one.golden
+expand two.golden
+cmp two.md two.golden
+expand locked/three.golden
+cmp locked/three.md locked/three.golden
+
+# And a rerun is idempotent.
+exec xurls -fix one.md locked/three.md two.md
+! stdout .
+! stderr .
+
+-- one.md --
+First ${SERVER}/redir-1
+-- one.golden --
+First ${SERVER}/plain-head
+-- two.md --
+Second ${SERVER}/redir-2
+-- two.golden --
+Second ${SERVER}/plain-head
+-- locked/three.md --
+Third ${SERVER}/redir-1
+-- locked/three.golden --
+Third ${SERVER}/plain-head

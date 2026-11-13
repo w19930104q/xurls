@@ -79,7 +79,10 @@ func TestScript(t *testing.T) {
 				http.Error(w, "", 500)
 			})
 
-			handle("GET", "/plain-get", func(w http.ResponseWriter, r *http.Request) {
+			mux.HandleFunc("/plain-get", func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != "GET" && r.Method != "HEAD" {
+					t.Errorf("expected GET or HEAD, got %q", r.Method)
+				}
 				fmt.Fprintf(w, "plaintext")
 			})
 			mux.HandleFunc("/get-only", func(w http.ResponseWriter, r *http.Request) {

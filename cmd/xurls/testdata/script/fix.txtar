@@ -7,7 +7,6 @@ expand redirects.golden-all
 cp redirects redirects.orig
 
 expand broken
-expand broken.golden
 cp broken broken.orig
 
 exec xurls -fix nothing
@@ -33,15 +32,22 @@ cp redirects.orig redirects
 
 exec xurls -fix=all redirects
 cmp redirects redirects.golden-all
+
+# A successful rerun is idempotent: no changes, no output, exit code zero.
+exec xurls -fix=all redirects
+! stdout .
+! stderr .
+cmp redirects redirects.golden-all
 cp redirects.orig redirects
 
+# Broken urls abort the transaction: nothing is written, not even the fixes.
 ! exec xurls -fix broken
-stdout -count=1 '^broken$'
-stderr -count=1 '5 broken urls'
+! stdout .
+stderr -count=1 'found 5 broken urls in "broken"'
 stderr -count=2 '/404 - 404 Not Found'
 stderr -count=2 '/500 - 500 Internal Server Error'
 stderr -count=1 'totallydoesnotexist.localhost/ - Head .* dial tcp'
-cmp broken broken.golden
+cmp broken broken.orig
 
 -- nothing --
 No redirect: ${SERVER}/plain-head
@@ -110,11 +116,6 @@ Temporary redirect codes:
 Only GET allowed, HEAD fails: ${SERVER}/plain-get
 -- broken --
 One redirect: ${SERVER}/redir-1
-404 errors: ${SERVER}/404 ${SERVER}/404
-500 errors: ${SERVER}/500 ${SERVER}/500
-Dial error: http://totallydoesnotexist.localhost/
--- broken.golden --
-One redirect: ${SERVER}/plain-head
 404 errors: ${SERVER}/404 ${SERVER}/404
 500 errors: ${SERVER}/500 ${SERVER}/500
 Dial error: http://totallydoesnotexist.localhost/
